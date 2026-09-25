@@ -6,7 +6,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 
-class PreferenceManager(context: Context) {
+class PreferenceManager(private val context: Context) {
     private val prefs: SharedPreferences = context.getSharedPreferences("wa_autoreply_prefs", Context.MODE_PRIVATE)
 
     private val _isMasterEnabled = MutableStateFlow(prefs.getBoolean(KEY_MASTER_ENABLED, true))
@@ -33,6 +33,11 @@ class PreferenceManager(context: Context) {
     fun setMasterEnabled(enabled: Boolean) {
         prefs.edit().putBoolean(KEY_MASTER_ENABLED, enabled).apply()
         _isMasterEnabled.value = enabled
+        if (enabled) {
+            com.example.service.AutoReplyForegroundService.startService(context)
+        } else {
+            com.example.service.AutoReplyForegroundService.stopService(context)
+        }
     }
 
     fun setReplyToGroups(enabled: Boolean) {

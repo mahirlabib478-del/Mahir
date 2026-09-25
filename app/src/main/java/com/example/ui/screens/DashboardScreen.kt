@@ -70,6 +70,7 @@ import com.example.ui.components.SenderAvatar
 import com.example.ui.components.StatusBadge
 import com.example.ui.theme.AccentGreen
 import com.example.ui.theme.PrimaryGreen
+import com.example.util.BatteryOptimizationHelper
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -289,6 +290,76 @@ fun DashboardScreen(
                             )
                             Spacer(modifier = Modifier.width(4.dp))
                             Text("Refresh", fontSize = 11.sp)
+                        }
+                    }
+                }
+            }
+        }
+
+        // Sleep Mode & Battery Optimization helper
+        item {
+            var isBatteryIgnored by remember {
+                mutableStateOf(BatteryOptimizationHelper.isIgnoringBatteryOptimizations(context))
+            }
+
+            if (!isBatteryIgnored) {
+                Card(
+                    shape = RoundedCornerShape(16.dp),
+                    colors = CardDefaults.cardColors(
+                        containerColor = Color(0xFFEFF6FF)
+                    ),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .testTag("battery_optimization_card")
+                ) {
+                    Column(modifier = Modifier.padding(16.dp)) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Icon(
+                                imageVector = Icons.Default.Bolt,
+                                contentDescription = "Battery Alert",
+                                tint = Color(0xFF2563EB),
+                                modifier = Modifier.size(24.dp)
+                            )
+                            Spacer(modifier = Modifier.width(10.dp))
+                            Text(
+                                text = "24/7 Sleep Mode Fix (স্ক্রিন অফ রিপ্লাই)",
+                                fontWeight = FontWeight.Bold,
+                                color = Color(0xFF1E40AF),
+                                fontSize = 15.sp
+                            )
+                        }
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Text(
+                            text = "ফোন স্লিপ থাকলে বা অ্যাপ বন্ধ থাকলেও স্বয়ংক্রিয় রিপ্লাই সক্রিয় রাখতে Android ব্যাটারি অপটিমাইজেশন বন্ধ (Unrestricted) করা আবশ্যক।",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = Color(0xFF1E3A8A)
+                        )
+                        Spacer(modifier = Modifier.height(10.dp))
+                        Row(
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Button(
+                                onClick = {
+                                    BatteryOptimizationHelper.requestIgnoreBatteryOptimization(context)
+                                    isBatteryIgnored = BatteryOptimizationHelper.isIgnoringBatteryOptimizations(context)
+                                },
+                                colors = ButtonDefaults.buttonColors(
+                                    containerColor = Color(0xFF2563EB),
+                                    contentColor = Color.White
+                                ),
+                                modifier = Modifier.weight(1.3f)
+                            ) {
+                                Text("Fix Sleep Mode", fontWeight = FontWeight.Bold, fontSize = 12.sp)
+                            }
+                            OutlinedButton(
+                                onClick = {
+                                    BatteryOptimizationHelper.openOemBackgroundSettings(context)
+                                },
+                                modifier = Modifier.weight(1f)
+                            ) {
+                                Text("Autostart Fix", fontSize = 12.sp)
+                            }
                         }
                     }
                 }

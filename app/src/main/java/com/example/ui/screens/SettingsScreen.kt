@@ -61,9 +61,11 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.data.preferences.PreferenceManager
+import com.example.service.AutoReplyForegroundService
 import com.example.service.WhatsAppNotificationListener
 import com.example.ui.theme.AccentGreen
 import com.example.ui.theme.PrimaryGreen
+import com.example.util.BatteryOptimizationHelper
 
 @Composable
 fun SettingsScreen(
@@ -156,6 +158,156 @@ fun SettingsScreen(
                         checked = prependTag,
                         onCheckedChange = { preferenceManager.setPrependTag(it) }
                     )
+                }
+            }
+        }
+
+        // 24/7 Background & Sleep Reliability
+        item {
+            var isBatteryIgnored by remember {
+                mutableStateOf(BatteryOptimizationHelper.isIgnoringBatteryOptimizations(context))
+            }
+
+            Card(
+                shape = RoundedCornerShape(16.dp),
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Column(modifier = Modifier.padding(16.dp)) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(
+                            imageVector = Icons.Default.Security,
+                            contentDescription = null,
+                            tint = Color(0xFF2563EB),
+                            modifier = Modifier.size(20.dp)
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(
+                            text = "Background & Sleep Reliability (ঘুমন্ত ফোনে রিপ্লাই)",
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 15.sp,
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
+                    }
+                    Spacer(modifier = Modifier.height(6.dp))
+                    Text(
+                        text = "অ্যাপ বন্ধ থাকলেও বা স্ক্রিন লক থাকলে নোটিফিকেশন রিপ্লাই চালু রাখতে নিচের কনফিগারেশনগুলো নিশ্চিত করুন।",
+                        fontSize = 12.sp,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+
+                    Spacer(modifier = Modifier.height(14.dp))
+
+                    // Foreground Service Status
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                text = "Persistent Background Service",
+                                fontWeight = FontWeight.SemiBold,
+                                fontSize = 13.sp
+                            )
+                            Text(
+                                text = if (AutoReplyForegroundService.isRunning) "Active (Sticky process - OS will not kill)" else "Inactive (Turn Master Switch ON)",
+                                fontSize = 11.sp,
+                                color = if (AutoReplyForegroundService.isRunning) Color(0xFF16A34A) else Color(0xFFDC2626)
+                            )
+                        }
+                        Surface(
+                            shape = RoundedCornerShape(6.dp),
+                            color = if (AutoReplyForegroundService.isRunning) Color(0xFFDCFCE7) else Color(0xFFFEE2E2)
+                        ) {
+                            Text(
+                                text = if (AutoReplyForegroundService.isRunning) "RUNNING" else "STOPPED",
+                                fontSize = 10.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = if (AutoReplyForegroundService.isRunning) Color(0xFF15803D) else Color(0xFFB91C1C),
+                                modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                            )
+                        }
+                    }
+
+                    HorizontalDivider(modifier = Modifier.padding(vertical = 12.dp))
+
+                    // Battery Optimization Status
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                text = "Battery Optimization",
+                                fontWeight = FontWeight.SemiBold,
+                                fontSize = 13.sp
+                            )
+                            Text(
+                                text = if (isBatteryIgnored) "Unrestricted (Allowed in Sleep Mode)" else "Restricted (May fail when phone sleeps)",
+                                fontSize = 11.sp,
+                                color = if (isBatteryIgnored) Color(0xFF16A34A) else Color(0xFFEA580C)
+                            )
+                        }
+                        if (!isBatteryIgnored) {
+                            Button(
+                                onClick = {
+                                    BatteryOptimizationHelper.requestIgnoreBatteryOptimization(context)
+                                    isBatteryIgnored = BatteryOptimizationHelper.isIgnoringBatteryOptimizations(context)
+                                },
+                                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF2563EB)),
+                                contentPadding = PaddingValues(horizontal = 10.dp, vertical = 4.dp),
+                                modifier = Modifier.height(32.dp)
+                            ) {
+                                Text("Fix", fontSize = 11.sp)
+                            }
+                        } else {
+                            Surface(
+                                shape = RoundedCornerShape(6.dp),
+                                color = Color(0xFFDCFCE7)
+                            ) {
+                                Text(
+                                    text = "OK",
+                                    fontSize = 10.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = Color(0xFF15803D),
+                                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp)
+                                )
+                            }
+                        }
+                    }
+
+                    HorizontalDivider(modifier = Modifier.padding(vertical = 12.dp))
+
+                    // OEM Autostart (Xiaomi / Samsung / Vivo / Oppo)
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                text = "Manufacturer Autostart Fix",
+                                fontWeight = FontWeight.SemiBold,
+                                fontSize = 13.sp
+                            )
+                            Text(
+                                text = "Xiaomi, Samsung, Vivo, Oppo ডিভাইসগুলোতে অটো-স্টার্ট চালু করুন",
+                                fontSize = 11.sp,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                        OutlinedButton(
+                            onClick = {
+                                BatteryOptimizationHelper.openOemBackgroundSettings(context)
+                            },
+                            contentPadding = PaddingValues(horizontal = 8.dp, vertical = 4.dp),
+                            modifier = Modifier.height(32.dp)
+                        ) {
+                            Text("Open", fontSize = 11.sp)
+                        }
+                    }
                 }
             }
         }

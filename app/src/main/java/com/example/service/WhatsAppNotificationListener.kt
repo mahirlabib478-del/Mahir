@@ -33,6 +33,13 @@ class WhatsAppNotificationListener : NotificationListenerService() {
         super.onListenerConnected()
         isServiceConnected = true
         Log.i(TAG, "WhatsApp NotificationListenerService connected successfully")
+        try {
+            if (AutoReplyApp.instance.preferenceManager.isMasterEnabled.value) {
+                AutoReplyForegroundService.startService(applicationContext)
+            }
+        } catch (e: Exception) {
+            Log.w(TAG, "Could not start AutoReplyForegroundService from listener", e)
+        }
     }
 
     override fun onListenerDisconnected() {
@@ -212,6 +219,13 @@ class WhatsAppNotificationListener : NotificationListenerService() {
         val targetSender = sender
         val targetText = incomingMessage
 
+        val powerManager = getSystemService(Context.POWER_SERVICE) as? android.os.PowerManager
+        val wakeLock = powerManager?.newWakeLock(
+            android.os.PowerManager.PARTIAL_WAKE_LOCK,
+            "AutoReply::NotificationProcessingWakeLock"
+        )
+        wakeLock?.acquire(10_000L) // Keep CPU active for up to 10s while sending
+
         serviceScope.launch {
             try {
                 val db = app.database
@@ -340,6 +354,12 @@ class WhatsAppNotificationListener : NotificationListenerService() {
                 }
             } catch (e: Exception) {
                 Log.e(TAG, "Error evaluating auto reply", e)
+            } finally {
+                try {
+                    if (wakeLock?.isHeld == true) {
+                        wakeLock.release()
+                    }
+                } catch (_: Exception) {}
             }
         }
     }

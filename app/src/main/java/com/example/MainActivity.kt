@@ -1,10 +1,15 @@
 package com.example
 
+import android.Manifest
+import android.content.pm.PackageManager
+import android.os.Build
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.BackHandler
+import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -21,10 +26,13 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
+import androidx.core.content.ContextCompat
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.service.AutoReplyForegroundService
 import com.example.ui.MainViewModel
 import com.example.ui.ScreenTab
 import com.example.ui.components.AppBottomNav
@@ -41,6 +49,13 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
+
+        try {
+            if (AutoReplyApp.instance.preferenceManager.isMasterEnabled.value) {
+                AutoReplyForegroundService.startService(this)
+            }
+        } catch (_: Exception) {}
+
         setContent {
             WAAutoReplyTheme {
                 MainAppScreen()
@@ -51,6 +66,7 @@ class MainActivity : ComponentActivity() {
 
 @Composable
 fun MainAppScreen(viewModel: MainViewModel = viewModel()) {
+    val context = LocalContext.current
     val currentTab by viewModel.currentTab.collectAsState()
     val isMasterEnabled by viewModel.isMasterEnabled.collectAsState()
     val isPermissionGranted by viewModel.isPermissionGranted.collectAsState()
@@ -69,6 +85,22 @@ fun MainAppScreen(viewModel: MainViewModel = viewModel()) {
 
     val snackbarHostState = remember { SnackbarHostState() }
     val lifecycleOwner = LocalLifecycleOwner.current
+
+    // Request notification permission for Foreground Service on Android 13+
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+        val permissionLauncher = rememberLauncherForActivityResult(
+            contract = ActivityResultContracts.RequestPermission()
+        ) { isGranted ->
+            if (isGranted && isMasterEnabled) {
+                AutoReplyForegroundService.startService(context)
+            }
+        }
+        LaunchedEffect(Unit) {
+            if (ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
+                permissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+            }
+        }
+    }
 
     // Re-check notification listener permission when user returns to app from system settings
     DisposableEffect(lifecycleOwner) {

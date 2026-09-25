@@ -21,6 +21,11 @@ class AutoReplyApp : Application() {
         database = AppDatabase.getInstance(this)
         preferenceManager = PreferenceManager(this)
 
+        // Keep service alive in background if master switch is ON
+        if (preferenceManager.isMasterEnabled.value) {
+            com.example.service.AutoReplyForegroundService.startService(this)
+        }
+
         // Ensure default rules exist even on existing database migrations
         kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.Dispatchers.IO).launch {
             try {
