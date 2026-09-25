@@ -13,5 +13,6 @@ data class ReplyLog(
     val repliedText: String,
     val ruleMatchedName: String,
     val status: String = "SENT", // "SENT", "SIMULATED", "SKIPPED_COOLDOWN"
-    val isGroup: Boolean = false
+    val isGroup: Boolean = false,
+    val platform: String = "WhatsApp" // "WhatsApp", "Messenger"
 )

@@ -16,7 +16,7 @@ import kotlinx.coroutines.launch
 
 @Database(
     entities = [ReplyRule::class, ReplyLog::class],
-    version = 1,
+    version = 2,
     exportSchema = false
 )
 abstract class AppDatabase : RoomDatabase() {
@@ -34,6 +34,7 @@ abstract class AppDatabase : RoomDatabase() {
                     AppDatabase::class.java,
                     "wa_autoreply_db"
                 )
+                    .fallbackToDestructiveMigration()
                     .addCallback(object : Callback() {
                         override fun onCreate(db: SupportSQLiteDatabase) {
                             super.onCreate(db)

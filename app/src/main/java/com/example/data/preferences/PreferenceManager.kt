@@ -21,6 +21,9 @@ class PreferenceManager(context: Context) {
     private val _supportWhatsAppBusiness = MutableStateFlow(prefs.getBoolean(KEY_SUPPORT_WA_BUSINESS, true))
     val supportWhatsAppBusiness: StateFlow<Boolean> = _supportWhatsAppBusiness.asStateFlow()
 
+    private val _supportMessenger = MutableStateFlow(prefs.getBoolean(KEY_SUPPORT_MESSENGER, true))
+    val supportMessenger: StateFlow<Boolean> = _supportMessenger.asStateFlow()
+
     private val _globalCooldownMinutes = MutableStateFlow(prefs.getInt(KEY_GLOBAL_COOLDOWN, 3))
     val globalCooldownMinutes: StateFlow<Int> = _globalCooldownMinutes.asStateFlow()
 
@@ -47,6 +50,11 @@ class PreferenceManager(context: Context) {
         _supportWhatsAppBusiness.value = enabled
     }
 
+    fun setSupportMessenger(enabled: Boolean) {
+        prefs.edit().putBoolean(KEY_SUPPORT_MESSENGER, enabled).apply()
+        _supportMessenger.value = enabled
+    }
+
     fun setGlobalCooldownMinutes(minutes: Int) {
         prefs.edit().putInt(KEY_GLOBAL_COOLDOWN, minutes).apply()
         _globalCooldownMinutes.value = minutes
@@ -71,6 +79,7 @@ class PreferenceManager(context: Context) {
         private const val KEY_REPLY_TO_GROUPS = "reply_to_groups"
         private const val KEY_PREPEND_TAG = "prepend_tag"
         private const val KEY_SUPPORT_WA_BUSINESS = "support_wa_business"
+        private const val KEY_SUPPORT_MESSENGER = "support_messenger"
         private const val KEY_GLOBAL_COOLDOWN = "global_cooldown"
         private const val KEY_BLACKLISTED_CONTACTS = "blacklisted_contacts"
     }

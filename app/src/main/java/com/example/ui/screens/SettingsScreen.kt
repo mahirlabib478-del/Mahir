@@ -78,6 +78,7 @@ fun SettingsScreen(
     val replyToGroups by preferenceManager.replyToGroups.collectAsState()
     val prependTag by preferenceManager.prependTag.collectAsState()
     val supportWABusiness by preferenceManager.supportWhatsAppBusiness.collectAsState()
+    val supportMessenger by preferenceManager.supportMessenger.collectAsState()
     val blacklistedContacts by preferenceManager.blacklistedContacts.collectAsState()
 
     var blacklistInput by remember(blacklistedContacts) { mutableStateOf(blacklistedContacts) }
@@ -129,7 +130,17 @@ fun SettingsScreen(
                     HorizontalDivider(modifier = Modifier.padding(vertical = 12.dp))
 
                     SettingToggleRow(
-                        title = "Reply to WhatsApp Groups",
+                        title = "Facebook Messenger",
+                        description = "Enable auto-replies for Messenger (com.facebook.orca & Lite)",
+                        icon = Icons.Filled.Chat,
+                        checked = supportMessenger,
+                        onCheckedChange = { preferenceManager.setSupportMessenger(it) }
+                    )
+
+                    HorizontalDivider(modifier = Modifier.padding(vertical = 12.dp))
+
+                    SettingToggleRow(
+                        title = "Reply to Group Chats",
                         description = "When disabled, only individual 1-on-1 private messages receive replies",
                         icon = Icons.Default.Group,
                         checked = replyToGroups,

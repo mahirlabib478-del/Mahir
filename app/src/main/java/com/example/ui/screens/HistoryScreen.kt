@@ -49,6 +49,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.data.model.ReplyLog
+import com.example.ui.components.PlatformBadge
 import com.example.ui.components.SenderAvatar
 import com.example.ui.components.StatusBadge
 import com.example.ui.theme.PrimaryGreen
@@ -239,14 +240,25 @@ fun HistoryScreen(
                                 modifier = Modifier.fillMaxWidth()
                             ) {
                                 Row(verticalAlignment = Alignment.CenterVertically) {
-                                    SenderAvatar(name = log.sender, isGroup = log.isGroup, modifier = Modifier.size(34.dp))
+                                    SenderAvatar(
+                                        name = log.sender,
+                                        isGroup = log.isGroup,
+                                        platform = log.platform,
+                                        modifier = Modifier.size(34.dp)
+                                    )
                                     Spacer(modifier = Modifier.width(10.dp))
                                     Column {
-                                        Text(
-                                            text = log.sender,
-                                            fontWeight = FontWeight.Bold,
-                                            fontSize = 14.sp
-                                        )
+                                        Row(
+                                            verticalAlignment = Alignment.CenterVertically,
+                                            horizontalArrangement = Arrangement.spacedBy(6.dp)
+                                        ) {
+                                            Text(
+                                                text = log.sender,
+                                                fontWeight = FontWeight.Bold,
+                                                fontSize = 14.sp
+                                            )
+                                            PlatformBadge(platform = log.platform)
+                                        }
                                         Text(
                                             text = timeStr,
                                             fontSize = 10.sp,

@@ -65,6 +65,7 @@ import androidx.compose.ui.unit.sp
 import com.example.data.model.ReplyLog
 import com.example.service.WhatsAppNotificationListener
 import com.example.ui.ScreenTab
+import com.example.ui.components.PlatformBadge
 import com.example.ui.components.SenderAvatar
 import com.example.ui.components.StatusBadge
 import com.example.ui.theme.AccentGreen
@@ -635,7 +636,7 @@ fun DashboardScreen(
                         modifier = Modifier.padding(12.dp),
                         verticalAlignment = Alignment.Top
                     ) {
-                        SenderAvatar(name = log.sender, isGroup = log.isGroup)
+                        SenderAvatar(name = log.sender, isGroup = log.isGroup, platform = log.platform)
                         Spacer(modifier = Modifier.width(12.dp))
                         Column(modifier = Modifier.weight(1f)) {
                             Row(
@@ -643,11 +644,17 @@ fun DashboardScreen(
                                 verticalAlignment = Alignment.CenterVertically,
                                 modifier = Modifier.fillMaxWidth()
                             ) {
-                                Text(
-                                    text = log.sender,
-                                    fontWeight = FontWeight.Bold,
-                                    fontSize = 14.sp
-                                )
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                                ) {
+                                    Text(
+                                        text = log.sender,
+                                        fontWeight = FontWeight.Bold,
+                                        fontSize = 14.sp
+                                    )
+                                    PlatformBadge(platform = log.platform)
+                                }
                                 Row(verticalAlignment = Alignment.CenterVertically) {
                                     StatusBadge(text = statusLabel, backgroundColor = statusBg, textColor = statusFg)
                                     Spacer(modifier = Modifier.width(6.dp))

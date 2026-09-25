@@ -143,8 +143,8 @@ fun MainAppScreen(viewModel: MainViewModel = viewModel()) {
                 ScreenTab.SIMULATOR -> SimulatorScreen(
                     chatHistory = simChatHistory,
                     isSimulating = isSimulatingReply,
-                    onSendMessage = { sender, text, isGroup ->
-                        viewModel.simulateIncomingMessage(sender, text, isGroup)
+                    onSendMessage = { sender, text, isGroup, platform ->
+                        viewModel.simulateIncomingMessage(sender, text, isGroup, platform)
                     },
                     onClearChat = { viewModel.clearSimChat() }
                 )

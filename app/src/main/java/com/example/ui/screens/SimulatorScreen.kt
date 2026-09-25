@@ -63,6 +63,7 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.ui.SimChatMessage
+import com.example.ui.components.PlatformBadge
 import com.example.ui.components.SenderAvatar
 import com.example.ui.theme.AccentGreen
 import com.example.ui.theme.PrimaryGreen
@@ -74,13 +75,17 @@ import java.util.Locale
 fun SimulatorScreen(
     chatHistory: List<SimChatMessage>,
     isSimulating: Boolean,
-    onSendMessage: (senderName: String, messageText: String, isGroup: Boolean) -> Unit,
+    onSendMessage: (senderName: String, messageText: String, isGroup: Boolean, platform: String) -> Unit,
     onClearChat: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     var senderName by remember { mutableStateOf("Rahim") }
     var messageText by remember { mutableStateOf("") }
     var isGroup by remember { mutableStateOf(false) }
+    var selectedPlatform by remember { mutableStateOf("WhatsApp") }
+
+    val isMessenger = selectedPlatform == "Messenger"
+    val themeColor = if (isMessenger) Color(0xFF0084FF) else PrimaryGreen
 
     val listState = rememberLazyListState()
 
@@ -144,6 +149,43 @@ fun SimulatorScreen(
                         Spacer(modifier = Modifier.width(4.dp))
                         Text("Clear", fontSize = 12.sp)
                     }
+                }
+
+                // Platform Selection (WhatsApp vs Messenger)
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    modifier = Modifier.padding(vertical = 4.dp)
+                ) {
+                    FilterChip(
+                        selected = selectedPlatform == "WhatsApp",
+                        onClick = { selectedPlatform = "WhatsApp" },
+                        label = { Text("WhatsApp", fontSize = 11.sp, fontWeight = FontWeight.SemiBold) },
+                        leadingIcon = {
+                            if (selectedPlatform == "WhatsApp") {
+                                Icon(imageVector = Icons.Default.Check, contentDescription = null, modifier = Modifier.size(14.dp))
+                            }
+                        },
+                        colors = FilterChipDefaults.filterChipColors(
+                            selectedContainerColor = Color(0xFFDCFCE7),
+                            selectedLabelColor = Color(0xFF15803D)
+                        )
+                    )
+
+                    FilterChip(
+                        selected = selectedPlatform == "Messenger",
+                        onClick = { selectedPlatform = "Messenger" },
+                        label = { Text("Messenger", fontSize = 11.sp, fontWeight = FontWeight.SemiBold) },
+                        leadingIcon = {
+                            if (selectedPlatform == "Messenger") {
+                                Icon(imageVector = Icons.Default.Check, contentDescription = null, modifier = Modifier.size(14.dp))
+                            }
+                        },
+                        colors = FilterChipDefaults.filterChipColors(
+                            selectedContainerColor = Color(0xFFDBEAFE),
+                            selectedLabelColor = Color(0xFF1D4ED8)
+                        )
+                    )
                 }
 
                 // Sender configuration
@@ -244,7 +286,7 @@ fun SimulatorScreen(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.Start
                     ) {
-                        SenderAvatar(name = msg.sender, isGroup = isGroup, modifier = Modifier.size(34.dp))
+                        SenderAvatar(name = msg.sender, isGroup = isGroup, platform = msg.platform, modifier = Modifier.size(34.dp))
                         Spacer(modifier = Modifier.width(8.dp))
                         Surface(
                             shape = RoundedCornerShape(topStart = 0.dp, topEnd = 16.dp, bottomStart = 16.dp, bottomEnd = 16.dp),
@@ -253,12 +295,18 @@ fun SimulatorScreen(
                             modifier = Modifier.widthIn(max = 280.dp)
                         ) {
                             Column(modifier = Modifier.padding(10.dp)) {
-                                Text(
-                                    text = msg.sender,
-                                    fontWeight = FontWeight.Bold,
-                                    fontSize = 12.sp,
-                                    color = PrimaryGreen
-                                )
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                                ) {
+                                    Text(
+                                        text = msg.sender,
+                                        fontWeight = FontWeight.Bold,
+                                        fontSize = 12.sp,
+                                        color = if (msg.platform == "Messenger") Color(0xFF1D4ED8) else PrimaryGreen
+                                    )
+                                    PlatformBadge(platform = msg.platform)
+                                }
                                 Spacer(modifier = Modifier.height(2.dp))
                                 Text(
                                     text = msg.text,
@@ -281,9 +329,20 @@ fun SimulatorScreen(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalAlignment = Alignment.End
                     ) {
+                        val outgoingBg = when {
+                            msg.status != "SENT" -> Color(0xFFF1F5F9)
+                            msg.platform == "Messenger" -> Color(0xFFDBEAFE)
+                            else -> Color(0xFFE7FFDB)
+                        }
+                        val titleColor = when {
+                            msg.status != "SENT" -> Color(0xFF475569)
+                            msg.platform == "Messenger" -> Color(0xFF1D4ED8)
+                            else -> Color(0xFF005C4B)
+                        }
+
                         Surface(
                             shape = RoundedCornerShape(topStart = 16.dp, topEnd = 0.dp, bottomStart = 16.dp, bottomEnd = 16.dp),
-                            color = if (msg.status == "SENT") Color(0xFFE7FFDB) else Color(0xFFF1F5F9),
+                            color = outgoingBg,
                             shadowElevation = 1.dp,
                             modifier = Modifier.widthIn(max = 280.dp)
                         ) {
@@ -293,17 +352,22 @@ fun SimulatorScreen(
                                     horizontalArrangement = Arrangement.SpaceBetween,
                                     modifier = Modifier.fillMaxWidth()
                                 ) {
-                                    Text(
-                                        text = "WA AutoReply 🤖",
-                                        fontWeight = FontWeight.Bold,
-                                        fontSize = 11.sp,
-                                        color = if (msg.status == "SENT") Color(0xFF005C4B) else Color(0xFF475569)
-                                    )
+                                    Row(
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        horizontalArrangement = Arrangement.spacedBy(4.dp)
+                                    ) {
+                                        Text(
+                                            text = if (msg.platform == "Messenger") "Messenger AutoReply 🤖" else "WA AutoReply 🤖",
+                                            fontWeight = FontWeight.Bold,
+                                            fontSize = 11.sp,
+                                            color = titleColor
+                                        )
+                                    }
                                     if (msg.status == "SENT") {
                                         Icon(
                                             imageVector = Icons.Default.DoneAll,
                                             contentDescription = "Delivered",
-                                            tint = Color(0xFF34B7F1),
+                                            tint = if (msg.platform == "Messenger") Color(0xFF2563EB) else Color(0xFF34B7F1),
                                             modifier = Modifier.size(14.dp)
                                         )
                                     }
@@ -404,14 +468,14 @@ fun SimulatorScreen(
                 OutlinedTextField(
                     value = messageText,
                     onValueChange = { messageText = it },
-                    placeholder = { Text("Simulate WhatsApp message...", fontSize = 13.sp) },
+                    placeholder = { Text("Simulate $selectedPlatform message...", fontSize = 13.sp) },
                     maxLines = 3,
                     shape = RoundedCornerShape(24.dp),
                     keyboardOptions = KeyboardOptions(imeAction = ImeAction.Send),
                     keyboardActions = KeyboardActions(
                         onSend = {
                             if (messageText.isNotBlank()) {
-                                onSendMessage(senderName, messageText, isGroup)
+                                onSendMessage(senderName, messageText, isGroup, selectedPlatform)
                                 messageText = ""
                             }
                         }
@@ -426,13 +490,13 @@ fun SimulatorScreen(
                 IconButton(
                     onClick = {
                         if (messageText.isNotBlank()) {
-                            onSendMessage(senderName, messageText, isGroup)
+                            onSendMessage(senderName, messageText, isGroup, selectedPlatform)
                             messageText = ""
                         }
                     },
                     enabled = messageText.isNotBlank() && !isSimulating,
                     colors = IconButtonDefaults.iconButtonColors(
-                        containerColor = PrimaryGreen,
+                        containerColor = themeColor,
                         contentColor = Color.White
                     ),
                     modifier = Modifier
@@ -441,7 +505,7 @@ fun SimulatorScreen(
                 ) {
                     Icon(
                         imageVector = Icons.AutoMirrored.Filled.Send,
-                        contentDescription = "Send WhatsApp Message"
+                        contentDescription = "Send $selectedPlatform Message"
                     )
                 }
             }

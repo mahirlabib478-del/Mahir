@@ -74,9 +74,20 @@ fun MatchTypeChip(matchType: MatchType, modifier: Modifier = Modifier) {
 }
 
 @Composable
-fun SenderAvatar(name: String, modifier: Modifier = Modifier, isGroup: Boolean = false) {
+fun SenderAvatar(
+    name: String,
+    modifier: Modifier = Modifier,
+    isGroup: Boolean = false,
+    platform: String = "WhatsApp"
+) {
     val initial = if (isGroup) "👥" else name.trim().take(1).uppercase().ifBlank { "?" }
-    val avatarBg = if (isGroup) Color(0xFF2E7D32) else Color(0xFF008069)
+    val isMessenger = platform.equals("Messenger", ignoreCase = true)
+    val avatarBg = when {
+        isGroup && isMessenger -> Color(0xFF1D4ED8)
+        isGroup -> Color(0xFF2E7D32)
+        isMessenger -> Color(0xFF2563EB)
+        else -> Color(0xFF008069)
+    }
 
     Box(
         contentAlignment = Alignment.Center,
@@ -90,6 +101,28 @@ fun SenderAvatar(name: String, modifier: Modifier = Modifier, isGroup: Boolean =
             color = Color.White,
             fontWeight = FontWeight.Bold,
             fontSize = if (isGroup) 16.sp else 18.sp
+        )
+    }
+}
+
+@Composable
+fun PlatformBadge(platform: String, modifier: Modifier = Modifier) {
+    val isMessenger = platform.equals("Messenger", ignoreCase = true)
+    val bg = if (isMessenger) Color(0xFFDBEAFE) else Color(0xFFDCFCE7)
+    val fg = if (isMessenger) Color(0xFF1D4ED8) else Color(0xFF15803D)
+    val label = if (isMessenger) "Messenger" else "WhatsApp"
+
+    Surface(
+        color = bg,
+        shape = RoundedCornerShape(6.dp),
+        modifier = modifier
+    ) {
+        Text(
+            text = label,
+            color = fg,
+            fontSize = 10.sp,
+            fontWeight = FontWeight.Bold,
+            modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
         )
     }
 }

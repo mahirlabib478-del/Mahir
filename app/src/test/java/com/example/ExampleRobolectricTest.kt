@@ -86,4 +86,42 @@ class ExampleRobolectricTest {
         assertEquals("Greeting & Welcome", success.rule.name)
         assertTrue(success.formattedReply.contains("Hello আম্মু!"))
     }
+
+    @Test
+    fun `test Messenger individual chat is not classified as group`() {
+        val extras = Bundle().apply {
+            putBoolean(Notification.EXTRA_IS_GROUP_CONVERSATION, false)
+            putString(Notification.EXTRA_TITLE, "John Doe")
+        }
+
+        val isGroup = WhatsAppNotificationListener.isGroupConversation(
+            sbnTag = null,
+            sbnKey = "0|com.facebook.orca|1|12345|1000",
+            extras = extras,
+            isGroupStyle = false,
+            conversationTitle = "John Doe",
+            personName = "John Doe"
+        )
+
+        assertFalse("Messenger 1-on-1 chat must not be a group", isGroup)
+    }
+
+    @Test
+    fun `test Messenger group chat with distinct title and person is classified as group`() {
+        val extras = Bundle().apply {
+            putBoolean(Notification.EXTRA_IS_GROUP_CONVERSATION, true)
+            putString(Notification.EXTRA_TITLE, "Project Team")
+        }
+
+        val isGroup = WhatsAppNotificationListener.isGroupConversation(
+            sbnTag = null,
+            sbnKey = "0|com.facebook.orca|1|67890|1000",
+            extras = extras,
+            isGroupStyle = true,
+            conversationTitle = "Project Team",
+            personName = "Alex"
+        )
+
+        assertTrue("Messenger group chat must be classified as group", isGroup)
+    }
 }

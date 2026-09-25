@@ -47,14 +47,17 @@ class WhatsAppNotificationListener : NotificationListenerService() {
 
         val packageName = sbn.packageName ?: return
 
-        // Target WhatsApp, WhatsApp Business, or GBWhatsApp
+        // Target WhatsApp (standard, business, GB) and Facebook Messenger (standard, Lite)
         val isWhatsApp = packageName == WHATSAPP_PACKAGE
         val isWhatsAppBusiness = packageName == WHATSAPP_BUSINESS_PACKAGE
         val isGBWhatsApp = packageName == GB_WHATSAPP_PACKAGE
+        val isMessenger = packageName == MESSENGER_PACKAGE || packageName == MESSENGER_LITE_PACKAGE
 
-        if (!isWhatsApp && !isWhatsAppBusiness && !isGBWhatsApp) {
+        if (!isWhatsApp && !isWhatsAppBusiness && !isGBWhatsApp && !isMessenger) {
             return
         }
+
+        val platformName = if (isMessenger) "Messenger" else "WhatsApp"
 
         val app = try {
             AutoReplyApp.instance
@@ -71,6 +74,11 @@ class WhatsAppNotificationListener : NotificationListenerService() {
 
         if (isWhatsAppBusiness && !prefs.supportWhatsAppBusiness.value) {
             Log.d(TAG, "Auto-reply ignored: WhatsApp Business support disabled")
+            return
+        }
+
+        if (isMessenger && !prefs.supportMessenger.value) {
+            Log.d(TAG, "Auto-reply ignored: Facebook Messenger support disabled")
             return
         }
 
@@ -158,12 +166,22 @@ class WhatsAppNotificationListener : NotificationListenerService() {
             incomingMessage = incomingMessage.substringAfter(": ").trim()
         }
 
-        // 4. Filter WhatsApp system notifications
+        // 4. Filter WhatsApp & Messenger system notifications
         if (sender.equals("WhatsApp", ignoreCase = true) || sender.equals("WhatsApp Business", ignoreCase = true)) {
             if (incomingMessage.contains("Checking for new messages", ignoreCase = true) ||
                 incomingMessage.contains("WhatsApp Web is active", ignoreCase = true) ||
                 incomingMessage.contains("Backup in progress", ignoreCase = true) ||
                 incomingMessage.contains("new messages", ignoreCase = true)) {
+                return
+            }
+        }
+
+        if (isMessenger) {
+            if (sender.equals("Messenger", ignoreCase = true) ||
+                sender.equals("Chat heads active", ignoreCase = true) ||
+                incomingMessage.contains("Chat head active", ignoreCase = true) ||
+                incomingMessage.contains("displaying over other apps", ignoreCase = true) ||
+                incomingMessage.contains("Waiting for network", ignoreCase = true)) {
                 return
             }
         }
@@ -231,10 +249,11 @@ class WhatsAppNotificationListener : NotificationListenerService() {
                                         repliedText = result.formattedReply,
                                         ruleMatchedName = result.rule.name,
                                         status = "SENT",
-                                        isGroup = isGroup
+                                        isGroup = isGroup,
+                                        platform = platformName
                                     )
                                 )
-                                Log.i(TAG, "Successfully auto-replied to $targetSender: ${result.formattedReply}")
+                                Log.i(TAG, "Successfully auto-replied on $platformName to $targetSender: ${result.formattedReply}")
                             } else {
                                 db.replyLogDao().insertLog(
                                     ReplyLog(
@@ -243,7 +262,8 @@ class WhatsAppNotificationListener : NotificationListenerService() {
                                         repliedText = "[Failed to trigger reply PendingIntent]",
                                         ruleMatchedName = result.rule.name,
                                         status = "SEND_FAILED",
-                                        isGroup = isGroup
+                                        isGroup = isGroup,
+                                        platform = platformName
                                     )
                                 )
                             }
@@ -253,10 +273,11 @@ class WhatsAppNotificationListener : NotificationListenerService() {
                                 ReplyLog(
                                     sender = targetSender,
                                     incomingMessage = targetText,
-                                    repliedText = "[No quick-reply action on notification. Ensure WhatsApp is closed/locked.]",
+                                    repliedText = "[No quick-reply action on notification. Ensure $platformName chat is not open on screen.]",
                                     ruleMatchedName = result.rule.name,
                                     status = "NO_REPLY_ACTION",
-                                    isGroup = isGroup
+                                    isGroup = isGroup,
+                                    platform = platformName
                                 )
                             )
                         }
@@ -269,7 +290,8 @@ class WhatsAppNotificationListener : NotificationListenerService() {
                                 repliedText = "[Skipped: ${result.remainingSeconds}s cooldown left]",
                                 ruleMatchedName = result.rule.name,
                                 status = "SKIPPED_COOLDOWN",
-                                isGroup = isGroup
+                                isGroup = isGroup,
+                                platform = platformName
                             )
                         )
                         Log.i(TAG, "Skipped reply to $targetSender due to cooldown")
@@ -282,7 +304,8 @@ class WhatsAppNotificationListener : NotificationListenerService() {
                                 repliedText = "[Ignored: Sender is in blacklist]",
                                 ruleMatchedName = "Blacklist",
                                 status = "BLACKLISTED",
-                                isGroup = isGroup
+                                isGroup = isGroup,
+                                platform = platformName
                             )
                         )
                     }
@@ -294,7 +317,8 @@ class WhatsAppNotificationListener : NotificationListenerService() {
                                 repliedText = "[Ignored: Group auto-reply disabled in settings]",
                                 ruleMatchedName = "Group Setting",
                                 status = "GROUP_IGNORED",
-                                isGroup = isGroup
+                                isGroup = isGroup,
+                                platform = platformName
                             )
                         )
                     }
@@ -306,7 +330,8 @@ class WhatsAppNotificationListener : NotificationListenerService() {
                                 repliedText = "[No rule matched: \"$targetText\"]",
                                 ruleMatchedName = "No Match",
                                 status = "NO_RULE_MATCH",
-                                isGroup = isGroup
+                                isGroup = isGroup,
+                                platform = platformName
                             )
                         )
                         Log.d(TAG, "No rule matched for message: $targetText from $targetSender")
@@ -421,6 +446,8 @@ class WhatsAppNotificationListener : NotificationListenerService() {
         const val WHATSAPP_PACKAGE = "com.whatsapp"
         const val WHATSAPP_BUSINESS_PACKAGE = "com.whatsapp.w4b"
         const val GB_WHATSAPP_PACKAGE = "com.gbwhatsapp"
+        const val MESSENGER_PACKAGE = "com.facebook.orca"
+        const val MESSENGER_LITE_PACKAGE = "com.facebook.mlite"
 
         @Volatile
         var isServiceConnected: Boolean = false

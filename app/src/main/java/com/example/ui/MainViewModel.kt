@@ -36,7 +36,8 @@ data class SimChatMessage(
     val timestamp: Long = System.currentTimeMillis(),
     val matchedRuleName: String? = null,
     val matchExplanation: String? = null,
-    val status: String = "SUCCESS"
+    val status: String = "SUCCESS",
+    val platform: String = "WhatsApp"
 )
 
 class MainViewModel(application: Application) : AndroidViewModel(application) {
@@ -216,7 +217,8 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     fun simulateIncomingMessage(
         senderName: String,
         messageText: String,
-        isGroup: Boolean
+        isGroup: Boolean,
+        platform: String = "WhatsApp"
     ) {
         val cleanSender = senderName.ifBlank { "Test Contact" }
         val cleanMsg = messageText.trim()
@@ -226,7 +228,8 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         val incomingChat = SimChatMessage(
             sender = cleanSender,
             text = cleanMsg,
-            isIncoming = true
+            isIncoming = true,
+            platform = platform
         )
         _simChatHistory.value = _simChatHistory.value + incomingChat
 
@@ -239,6 +242,19 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             val isBlacklisted = preferenceManager.isContactBlacklisted(cleanSender)
             val replyToGroups = preferenceManager.replyToGroups.value
             val lastTimestamp = simCooldownMap[cleanSender]
+
+            if (platform == "Messenger" && !preferenceManager.supportMessenger.value) {
+                val disabledMsg = SimChatMessage(
+                    sender = "System",
+                    text = "🔵 [Messenger Disabled] Messenger auto-reply is currently disabled in Settings.",
+                    isIncoming = false,
+                    status = "BLOCKED",
+                    platform = platform
+                )
+                _simChatHistory.value = _simChatHistory.value + disabledMsg
+                _isSimulatingReply.value = false
+                return@launch
+            }
 
             val result = RuleMatcher.evaluate(
                 incomingMessage = cleanMsg,
@@ -256,12 +272,13 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 is MatchResult.Success -> {
                     simCooldownMap[cleanSender] = System.currentTimeMillis()
                     val responseMsg = SimChatMessage(
-                        sender = "WA AutoReply",
+                        sender = if (platform == "Messenger") "Messenger AutoReply" else "WA AutoReply",
                         text = result.formattedReply,
                         isIncoming = false,
                         matchedRuleName = result.rule.name,
                         matchExplanation = result.explanation,
-                        status = "SENT"
+                        status = "SENT",
+                        platform = platform
                     )
                     _simChatHistory.value = _simChatHistory.value + responseMsg
 
@@ -273,7 +290,8 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                             repliedText = result.formattedReply,
                             ruleMatchedName = result.rule.name,
                             status = "SIMULATED",
-                            isGroup = isGroup
+                            isGroup = isGroup,
+                            platform = platform
                         )
                     )
                 }
@@ -284,7 +302,8 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                         isIncoming = false,
                         matchedRuleName = result.rule.name,
                         matchExplanation = result.reason,
-                        status = "COOLDOWN"
+                        status = "COOLDOWN",
+                        platform = platform
                     )
                     _simChatHistory.value = _simChatHistory.value + skippedMsg
                 }
@@ -293,7 +312,8 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                         sender = "System",
                         text = "🚫 [Blacklisted] Sender '$cleanSender' is in your ignore list. No reply sent.",
                         isIncoming = false,
-                        status = "BLOCKED"
+                        status = "BLOCKED",
+                        platform = platform
                     )
                     _simChatHistory.value = _simChatHistory.value + blockedMsg
                 }
@@ -302,7 +322,8 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                         sender = "System",
                         text = "👥 [Group Ignored] Auto-reply to groups is turned off in Settings.",
                         isIncoming = false,
-                        status = "BLOCKED"
+                        status = "BLOCKED",
+                        platform = platform
                     )
                     _simChatHistory.value = _simChatHistory.value + groupMsg
                 }
@@ -311,7 +332,8 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                         sender = "System",
                         text = "⚠️ [Master OFF] Auto-reply is currently paused. Turn on the Master Switch on the Dashboard.",
                         isIncoming = false,
-                        status = "PAUSED"
+                        status = "PAUSED",
+                        platform = platform
                     )
                     _simChatHistory.value = _simChatHistory.value + disabledMsg
                 }
@@ -320,7 +342,8 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                         sender = "System",
                         text = "ℹ️ [No Rule Matched] None of your active rules matched \"$cleanMsg\". Add a Default Fallback rule to answer all messages.",
                         isIncoming = false,
-                        status = "NO_MATCH"
+                        status = "NO_MATCH",
+                        platform = platform
                     )
                     _simChatHistory.value = _simChatHistory.value + noMatchMsg
                 }
