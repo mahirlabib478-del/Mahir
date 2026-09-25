@@ -226,141 +226,121 @@ class WhatsAppNotificationListener : NotificationListenerService() {
         )
         wakeLock?.acquire(10_000L) // Keep CPU active for up to 10s while sending
 
-        serviceScope.launch {
-            try {
-                val db = app.database
-                val rules = db.replyRuleDao().getEnabledRulesSync()
-
-                val result = RuleMatcher.evaluate(
-                    incomingMessage = targetText,
-                    sender = targetSender,
-                    isGroup = isGroup,
-                    rules = rules,
-                    isMasterEnabled = prefs.isMasterEnabled.value,
-                    replyToGroupsAllowed = replyToGroups,
-                    isContactBlacklisted = isBlacklisted,
-                    lastReplyTimestamp = lastTimestamp,
-                    prependAutoReplyTag = prependTag
-                )
-
-                when (result) {
-                    is MatchResult.Success -> {
-                        val replyAction = findReplyAction(notification)
-                        if (replyAction != null) {
-                            val (actionIntent, remoteInputs) = replyAction
-                            val sent = sendReply(
-                                context = applicationContext,
-                                pendingIntent = actionIntent,
-                                remoteInputs = remoteInputs,
-                                replyText = result.formattedReply
-                            )
-                            if (sent) {
-                                senderLastRepliedMap[targetSender] = System.currentTimeMillis()
-                                db.replyLogDao().insertLog(
-                                    ReplyLog(
-                                        sender = targetSender,
-                                        incomingMessage = targetText,
-                                        repliedText = result.formattedReply,
-                                        ruleMatchedName = result.rule.name,
-                                        status = "SENT",
-                                        isGroup = isGroup,
-                                        platform = platformName
-                                    )
-                                )
-                                Log.i(TAG, "Successfully auto-replied on $platformName to $targetSender: ${result.formattedReply}")
-                            } else {
-                                db.replyLogDao().insertLog(
-                                    ReplyLog(
-                                        sender = targetSender,
-                                        incomingMessage = targetText,
-                                        repliedText = "[Failed to trigger reply PendingIntent]",
-                                        ruleMatchedName = result.rule.name,
-                                        status = "SEND_FAILED",
-                                        isGroup = isGroup,
-                                        platform = platformName
-                                    )
-                                )
-                            }
-                        } else {
-                            Log.w(TAG, "No quick-reply action found on notification from $targetSender")
-                            db.replyLogDao().insertLog(
-                                ReplyLog(
-                                    sender = targetSender,
-                                    incomingMessage = targetText,
-                                    repliedText = "[No quick-reply action on notification. Ensure $platformName chat is not open on screen.]",
-                                    ruleMatchedName = result.rule.name,
-                                    status = "NO_REPLY_ACTION",
-                                    isGroup = isGroup,
-                                    platform = platformName
-                                )
-                            )
-                        }
-                    }
-                    is MatchResult.CooldownSkipped -> {
-                        db.replyLogDao().insertLog(
-                            ReplyLog(
-                                sender = targetSender,
-                                incomingMessage = targetText,
-                                repliedText = "[Skipped: ${result.remainingSeconds}s cooldown left]",
-                                ruleMatchedName = result.rule.name,
-                                status = "SKIPPED_COOLDOWN",
-                                isGroup = isGroup,
-                                platform = platformName
-                            )
-                        )
-                        Log.i(TAG, "Skipped reply to $targetSender due to cooldown")
-                    }
-                    is MatchResult.Blacklisted -> {
-                        db.replyLogDao().insertLog(
-                            ReplyLog(
-                                sender = targetSender,
-                                incomingMessage = targetText,
-                                repliedText = "[Ignored: Sender is in blacklist]",
-                                ruleMatchedName = "Blacklist",
-                                status = "BLACKLISTED",
-                                isGroup = isGroup,
-                                platform = platformName
-                            )
-                        )
-                    }
-                    is MatchResult.GroupIgnored -> {
-                        db.replyLogDao().insertLog(
-                            ReplyLog(
-                                sender = targetSender,
-                                incomingMessage = targetText,
-                                repliedText = "[Ignored: Group auto-reply disabled in settings]",
-                                ruleMatchedName = "Group Setting",
-                                status = "GROUP_IGNORED",
-                                isGroup = isGroup,
-                                platform = platformName
-                            )
-                        )
-                    }
-                    is MatchResult.NoRuleMatched -> {
-                        db.replyLogDao().insertLog(
-                            ReplyLog(
-                                sender = targetSender,
-                                incomingMessage = targetText,
-                                repliedText = "[No rule matched: \"$targetText\"]",
-                                ruleMatchedName = "No Match",
-                                status = "NO_RULE_MATCH",
-                                isGroup = isGroup,
-                                platform = platformName
-                            )
-                        )
-                        Log.d(TAG, "No rule matched for message: $targetText from $targetSender")
-                    }
-                    else -> {}
-                }
+        try {
+            val db = app.database
+            val rules = try {
+                db.replyRuleDao().getEnabledRulesDirect()
             } catch (e: Exception) {
-                Log.e(TAG, "Error evaluating auto reply", e)
-            } finally {
+                Log.e(TAG, "Failed to load rules directly", e)
+                emptyList()
+            }
+
+            val result = RuleMatcher.evaluate(
+                incomingMessage = targetText,
+                sender = targetSender,
+                isGroup = isGroup,
+                rules = rules,
+                isMasterEnabled = prefs.isMasterEnabled.value,
+                replyToGroupsAllowed = replyToGroups,
+                isContactBlacklisted = isBlacklisted,
+                lastReplyTimestamp = lastTimestamp,
+                prependAutoReplyTag = prependTag
+            )
+
+            var logStatus = ""
+            var repliedTextLog = ""
+            var ruleMatchedName = ""
+
+            when (result) {
+                is MatchResult.Success -> {
+                    ruleMatchedName = result.rule.name
+                    val replyAction = findReplyAction(notification)
+                    if (replyAction != null) {
+                        val (actionIntent, remoteInputs) = replyAction
+                        val sent = sendReply(
+                            context = this@WhatsAppNotificationListener,
+                            pendingIntent = actionIntent,
+                            remoteInputs = remoteInputs,
+                            replyText = result.formattedReply
+                        )
+                        if (sent) {
+                            senderLastRepliedMap[targetSender] = System.currentTimeMillis()
+                            logStatus = "SENT"
+                            repliedTextLog = result.formattedReply
+                            Log.i(TAG, "Successfully auto-replied on $platformName to $targetSender: ${result.formattedReply}")
+                        } else {
+                            logStatus = "SEND_FAILED"
+                            repliedTextLog = "[Failed to trigger reply PendingIntent]"
+                        }
+                    } else {
+                        logStatus = "NO_REPLY_ACTION"
+                        repliedTextLog = "[No quick-reply action on notification. Ensure $platformName chat is not open on screen.]"
+                        Log.w(TAG, "No quick-reply action found on notification from $targetSender")
+                    }
+                }
+                is MatchResult.CooldownSkipped -> {
+                    ruleMatchedName = result.rule.name
+                    logStatus = "SKIPPED_COOLDOWN"
+                    repliedTextLog = "[Skipped: ${result.remainingSeconds}s cooldown left]"
+                    Log.i(TAG, "Skipped reply to $targetSender due to cooldown")
+                }
+                is MatchResult.Blacklisted -> {
+                    ruleMatchedName = "Blacklist"
+                    logStatus = "BLACKLISTED"
+                    repliedTextLog = "[Ignored: Sender is in blacklist]"
+                }
+                is MatchResult.GroupIgnored -> {
+                    ruleMatchedName = "Group Setting"
+                    logStatus = "GROUP_IGNORED"
+                    repliedTextLog = "[Ignored: Group auto-reply disabled in settings]"
+                }
+                is MatchResult.NoRuleMatched -> {
+                    ruleMatchedName = "No Match"
+                    logStatus = "NO_RULE_MATCH"
+                    repliedTextLog = "[No rule matched: \"$targetText\"]"
+                    Log.d(TAG, "No rule matched for message: $targetText from $targetSender")
+                }
+                else -> {}
+            }
+
+            // Save log entry to DB asynchronously
+            if (logStatus.isNotEmpty() && repliedTextLog.isNotEmpty()) {
+                val logEntry = ReplyLog(
+                    sender = targetSender,
+                    incomingMessage = targetText,
+                    repliedText = repliedTextLog,
+                    ruleMatchedName = ruleMatchedName,
+                    status = logStatus,
+                    isGroup = isGroup,
+                    platform = platformName
+                )
+                serviceScope.launch(Dispatchers.IO) {
+                    try {
+                        db.replyLogDao().insertLog(logEntry)
+                    } catch (e: Exception) {
+                        Log.e(TAG, "Error inserting log to db", e)
+                    } finally {
+                        try {
+                            if (wakeLock?.isHeld == true) {
+                                wakeLock.release()
+                            }
+                        } catch (_: Exception) {}
+                    }
+                }
+            } else {
                 try {
                     if (wakeLock?.isHeld == true) {
                         wakeLock.release()
                     }
                 } catch (_: Exception) {}
             }
+        } catch (e: Exception) {
+            Log.e(TAG, "Error evaluating auto reply", e)
+            try {
+                if (wakeLock?.isHeld == true) {
+                    wakeLock.release()
+                }
+            } catch (_: Exception) {}
         }
     }
 
@@ -439,7 +419,10 @@ class WhatsAppNotificationListener : NotificationListenerService() {
         replyText: String
     ): Boolean {
         return try {
-            val intent = Intent()
+            val intent = Intent().apply {
+                addFlags(Intent.FLAG_RECEIVER_FOREGROUND)
+                addFlags(Intent.FLAG_INCLUDE_STOPPED_PACKAGES)
+            }
             val bundle = Bundle()
             for (remoteInput in remoteInputs) {
                 bundle.putCharSequence(remoteInput.resultKey, replyText)
@@ -450,7 +433,33 @@ class WhatsAppNotificationListener : NotificationListenerService() {
             bundle.putCharSequence("key_text_reply", replyText)
             intent.putExtras(bundle)
 
-            pendingIntent.send(context, 0, intent)
+            val optionsBundle: Bundle? = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+                try {
+                    val activityOptions = android.app.ActivityOptions.makeBasic()
+                    activityOptions.setPendingIntentBackgroundActivityStartMode(
+                        android.app.ActivityOptions.MODE_BACKGROUND_ACTIVITY_START_ALLOWED
+                    )
+                    if (Build.VERSION.SDK_INT >= 35) {
+                        try {
+                            activityOptions.setPendingIntentCreatorBackgroundActivityStartMode(
+                                android.app.ActivityOptions.MODE_BACKGROUND_ACTIVITY_START_ALLOWED
+                            )
+                        } catch (_: Throwable) {}
+                    }
+                    activityOptions.toBundle()
+                } catch (e: Throwable) {
+                    Log.w(TAG, "Could not set background activity start mode on ActivityOptions", e)
+                    null
+                }
+            } else {
+                null
+            }
+
+            if (optionsBundle != null) {
+                pendingIntent.send(context, 0, intent, null, null, null, optionsBundle)
+            } else {
+                pendingIntent.send(context, 0, intent)
+            }
             true
         } catch (e: PendingIntent.CanceledException) {
             Log.e(TAG, "Reply PendingIntent canceled", e)

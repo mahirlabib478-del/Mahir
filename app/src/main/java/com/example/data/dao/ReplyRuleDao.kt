@@ -20,6 +20,9 @@ interface ReplyRuleDao {
     @Query("SELECT * FROM reply_rules WHERE isEnabled = 1 ORDER BY priority DESC, id DESC")
     suspend fun getEnabledRulesSync(): List<ReplyRule>
 
+    @Query("SELECT * FROM reply_rules WHERE isEnabled = 1 ORDER BY priority DESC, id DESC")
+    fun getEnabledRulesDirect(): List<ReplyRule>
+
     @Query("SELECT * FROM reply_rules WHERE id = :id LIMIT 1")
     suspend fun getRuleById(id: Long): ReplyRule?
 
