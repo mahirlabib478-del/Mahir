@@ -255,6 +255,29 @@ fun AutostartGuideDialog(
                         }
                     }
                 }
+
+                item {
+                    androidx.compose.material3.Surface(
+                        color = Color(0xFFF0FDF4),
+                        shape = RoundedCornerShape(10.dp),
+                        modifier = Modifier.padding(vertical = 2.dp)
+                    ) {
+                        androidx.compose.foundation.layout.Column(modifier = Modifier.padding(10.dp)) {
+                            Text(
+                                text = "৫. Recent Apps-এ অ্যাপ লক (তালা) করুন 🔒:",
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 13.sp,
+                                color = Color(0xFF166534)
+                            )
+                            Spacer(modifier = Modifier.size(2.dp))
+                            Text(
+                                text = "• ফোনের রিসেন্ট অ্যাপস (Recent apps) স্ক্রিনে যান।\n• WA AutoReply অ্যাপটির ওপর চেপে ধরে 'Lock' (তালা) আইকনে চাপুন, যাতে মেমোরি ক্লিনার অ্যাপটিকে কখনো বন্ধ না করে।",
+                                fontSize = 12.sp,
+                                color = Color(0xFF15803D)
+                            )
+                        }
+                    }
+                }
             }
         },
         confirmButton = {

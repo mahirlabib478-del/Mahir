@@ -257,11 +257,12 @@ class WhatsAppNotificationListener : NotificationListenerService() {
                     val replyAction = findReplyAction(notification)
                     if (replyAction != null) {
                         val (actionIntent, remoteInputs) = replyAction
-                        val sent = sendReply(
+                        val (sent, errorMsg) = sendReply(
                             context = this@WhatsAppNotificationListener,
                             pendingIntent = actionIntent,
                             remoteInputs = remoteInputs,
-                            replyText = result.formattedReply
+                            replyText = result.formattedReply,
+                            targetPackage = packageName
                         )
                         if (sent) {
                             senderLastRepliedMap[targetSender] = System.currentTimeMillis()
@@ -270,7 +271,7 @@ class WhatsAppNotificationListener : NotificationListenerService() {
                             Log.i(TAG, "Successfully auto-replied on $platformName to $targetSender: ${result.formattedReply}")
                         } else {
                             logStatus = "SEND_FAILED"
-                            repliedTextLog = "[Failed to trigger reply PendingIntent]"
+                            repliedTextLog = "[Send Failed: $errorMsg]"
                         }
                     } else {
                         logStatus = "NO_REPLY_ACTION"
@@ -416,58 +417,79 @@ class WhatsAppNotificationListener : NotificationListenerService() {
         context: Context,
         pendingIntent: PendingIntent,
         remoteInputs: Array<android.app.RemoteInput>,
-        replyText: String
-    ): Boolean {
-        return try {
-            val intent = Intent().apply {
-                addFlags(Intent.FLAG_RECEIVER_FOREGROUND)
-                addFlags(Intent.FLAG_INCLUDE_STOPPED_PACKAGES)
-            }
-            val bundle = Bundle()
-            for (remoteInput in remoteInputs) {
-                bundle.putCharSequence(remoteInput.resultKey, replyText)
-            }
-            android.app.RemoteInput.addResultsToIntent(remoteInputs, intent, bundle)
+        replyText: String,
+        targetPackage: String? = null
+    ): Pair<Boolean, String> {
+        val replyIntent = Intent()
+        val resultsBundle = Bundle()
 
-            // Direct key fallback for WhatsApp compatibility
-            bundle.putCharSequence("key_text_reply", replyText)
-            intent.putExtras(bundle)
-
-            val optionsBundle: Bundle? = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
-                try {
-                    val activityOptions = android.app.ActivityOptions.makeBasic()
-                    activityOptions.setPendingIntentBackgroundActivityStartMode(
-                        android.app.ActivityOptions.MODE_BACKGROUND_ACTIVITY_START_ALLOWED
-                    )
-                    if (Build.VERSION.SDK_INT >= 35) {
-                        try {
-                            activityOptions.setPendingIntentCreatorBackgroundActivityStartMode(
-                                android.app.ActivityOptions.MODE_BACKGROUND_ACTIVITY_START_ALLOWED
-                            )
-                        } catch (_: Throwable) {}
-                    }
-                    activityOptions.toBundle()
-                } catch (e: Throwable) {
-                    Log.w(TAG, "Could not set background activity start mode on ActivityOptions", e)
-                    null
-                }
-            } else {
-                null
-            }
-
-            if (optionsBundle != null) {
-                pendingIntent.send(context, 0, intent, null, null, null, optionsBundle)
-            } else {
-                pendingIntent.send(context, 0, intent)
-            }
-            true
-        } catch (e: PendingIntent.CanceledException) {
-            Log.e(TAG, "Reply PendingIntent canceled", e)
-            false
-        } catch (e: Exception) {
-            Log.e(TAG, "Failed to send auto-reply", e)
-            false
+        // 1. Add result to each declared RemoteInput
+        for (remoteInput in remoteInputs) {
+            resultsBundle.putCharSequence(remoteInput.resultKey, replyText)
         }
+        // Direct key fallbacks for WhatsApp and Android Auto
+        resultsBundle.putCharSequence("key_text_reply", replyText)
+        resultsBundle.putCharSequence("android.intent.extra.TEXT", replyText)
+        resultsBundle.putCharSequence(Intent.EXTRA_TEXT, replyText)
+
+        // Attach results via RemoteInput
+        android.app.RemoteInput.addResultsToIntent(remoteInputs, replyIntent, resultsBundle)
+        replyIntent.putExtras(resultsBundle)
+
+        var lastError = "Unknown error"
+
+        // Strategy 1: Standard send with context (works on 99% of Android versions without SecurityException)
+        try {
+            pendingIntent.send(context, 0, replyIntent)
+            Log.i(TAG, "Reply sent successfully via Strategy 1 (context.send)")
+            return Pair(true, "")
+        } catch (e: Exception) {
+            lastError = "${e.javaClass.simpleName}: ${e.message}"
+            Log.w(TAG, "Strategy 1 failed: $lastError")
+        }
+
+        // Strategy 2: Standard send with applicationContext
+        try {
+            pendingIntent.send(context.applicationContext, 0, replyIntent)
+            Log.i(TAG, "Reply sent successfully via Strategy 2 (applicationContext.send)")
+            return Pair(true, "")
+        } catch (e: Exception) {
+            lastError = "${e.javaClass.simpleName}: ${e.message}"
+            Log.w(TAG, "Strategy 2 failed: $lastError")
+        }
+
+        // Strategy 3: Try with ActivityOptions for Android 14+ if BAL is enforced
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+            try {
+                val activityOptions = android.app.ActivityOptions.makeBasic()
+                activityOptions.setPendingIntentBackgroundActivityStartMode(
+                    android.app.ActivityOptions.MODE_BACKGROUND_ACTIVITY_START_ALLOWED
+                )
+                pendingIntent.send(context.applicationContext, 0, replyIntent, null, null, null, activityOptions.toBundle())
+                Log.i(TAG, "Reply sent successfully via Strategy 3 (ActivityOptions)")
+                return Pair(true, "")
+            } catch (e: Exception) {
+                lastError = "${e.javaClass.simpleName}: ${e.message}"
+                Log.w(TAG, "Strategy 3 failed: $lastError")
+            }
+        }
+
+        // Strategy 4: Explicit package if targetPackage is specified
+        if (!targetPackage.isNullOrEmpty()) {
+            try {
+                val explicitIntent = Intent(replyIntent).apply {
+                    setPackage(targetPackage)
+                }
+                pendingIntent.send(context.applicationContext, 0, explicitIntent)
+                Log.i(TAG, "Reply sent successfully via Strategy 4 (explicit package)")
+                return Pair(true, "")
+            } catch (e: Exception) {
+                lastError = "${e.javaClass.simpleName}: ${e.message}"
+                Log.w(TAG, "Strategy 4 failed: $lastError")
+            }
+        }
+
+        return Pair(false, lastError)
     }
 
     companion object {
