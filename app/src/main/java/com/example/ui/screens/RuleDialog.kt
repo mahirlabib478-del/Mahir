@@ -154,7 +154,7 @@ fun RuleDialog(
                         label = { Text("Match Type") },
                         trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = isDropdownExpanded) },
                         modifier = Modifier
-                            .menuAnchor()
+                            .menuAnchor(androidx.compose.material3.MenuAnchorType.PrimaryNotEditable)
                             .fillMaxWidth()
                             .testTag("match_type_selector")
                     )

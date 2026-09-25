@@ -132,4 +132,54 @@ class ExampleUnitTest {
         assertEquals("Fallback", success.rule.name)
         assertEquals("I will reply soon.", success.formattedReply)
     }
+
+    @Test
+    fun testRuleMatcher_punctuationHandling() {
+        val result = RuleMatcher.evaluate(
+            incomingMessage = "hi!",
+            sender = "Friend",
+            isGroup = false,
+            rules = sampleRules,
+            isMasterEnabled = true,
+            replyToGroupsAllowed = false,
+            isContactBlacklisted = false,
+            prependAutoReplyTag = false
+        )
+
+        assertTrue(result is MatchResult.Success)
+        val success = result as MatchResult.Success
+        assertEquals("Greeting", success.rule.name)
+    }
+
+    @Test
+    fun testRuleMatcher_bengaliSupport() {
+        val bengaliRules = listOf(
+            ReplyRule(
+                id = 1,
+                name = "Salam",
+                incomingPattern = "সালাম, salam",
+                matchType = MatchType.CONTAINS,
+                replyText = "ওয়ালাইকুমুস সালাম!",
+                isEnabled = true,
+                isGroupAllowed = false,
+                cooldownSeconds = 0,
+                priority = 10
+            )
+        )
+        val result = RuleMatcher.evaluate(
+            incomingMessage = "ভাই সালাম",
+            sender = "Rahim",
+            isGroup = false,
+            rules = bengaliRules,
+            isMasterEnabled = true,
+            replyToGroupsAllowed = false,
+            isContactBlacklisted = false,
+            prependAutoReplyTag = false
+        )
+
+        assertTrue(result is MatchResult.Success)
+        val success = result as MatchResult.Success
+        assertEquals("Salam", success.rule.name)
+        assertEquals("ওয়ালাইকুমুস সালাম!", success.formattedReply)
+    }
 }

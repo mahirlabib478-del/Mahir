@@ -115,27 +115,35 @@ object RuleMatcher {
         val trimmedPattern = pattern.trim()
         if (trimmedPattern.isEmpty()) return false
 
+        val normalizedMsg = message.trim().trimEnd('.', '!', '?', ',', ':', ';').trim()
+
         return when (matchType) {
             MatchType.EXACT -> {
                 // Support multiple comma-separated exact triggers
                 val triggers = trimmedPattern.split(",").map { it.trim() }.filter { it.isNotEmpty() }
-                triggers.any { it.equals(message, ignoreCase = true) }
+                triggers.any {
+                    it.equals(message, ignoreCase = true) || it.equals(normalizedMsg, ignoreCase = true)
+                }
             }
             MatchType.CONTAINS -> {
                 val keywords = trimmedPattern.split(",").map { it.trim().lowercase(Locale.ROOT) }.filter { it.isNotEmpty() }
                 val lowerMsg = message.lowercase(Locale.ROOT)
+                val lowerNorm = normalizedMsg.lowercase(Locale.ROOT)
                 keywords.any { kw ->
-                    if (kw.all { it.isLetterOrDigit() }) {
-                        // Use word boundary so "hi" does not match within "this" or "white"
+                    if (kw.all { it in 'a'..'z' || it in 'A'..'Z' || it in '0'..'9' }) {
+                        // Use word boundary for alphanumeric words
                         Regex("\\b${Regex.escape(kw)}\\b", RegexOption.IGNORE_CASE).containsMatchIn(message)
                     } else {
-                        lowerMsg.contains(kw)
+                        // For Unicode/Bengali or symbols, direct substring match
+                        lowerMsg.contains(kw) || lowerNorm.contains(kw)
                     }
                 }
             }
             MatchType.STARTS_WITH -> {
                 val prefixes = trimmedPattern.split(",").map { it.trim() }.filter { it.isNotEmpty() }
-                prefixes.any { message.startsWith(it, ignoreCase = true) }
+                prefixes.any {
+                    message.startsWith(it, ignoreCase = true) || normalizedMsg.startsWith(it, ignoreCase = true)
+                }
             }
             MatchType.REGEX -> {
                 try {

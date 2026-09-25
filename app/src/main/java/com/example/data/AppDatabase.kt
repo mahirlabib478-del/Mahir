@@ -53,52 +53,52 @@ abstract class AppDatabase : RoomDatabase() {
         val defaultStarterRules = listOf(
             ReplyRule(
                 name = "Greeting & Welcome",
-                incomingPattern = "hello",
+                incomingPattern = "hi, hello, hey, সালাম, হ্যালো",
                 matchType = MatchType.CONTAINS,
                 replyText = "Hello {sender}! Thanks for reaching out. I'm currently away from my phone, but I'll reply to your message as soon as possible.",
                 isEnabled = true,
                 isGroupAllowed = false,
-                cooldownSeconds = 180,
+                cooldownSeconds = 30,
                 priority = 10
             ),
             ReplyRule(
                 name = "Assalamu Alaikum",
-                incomingPattern = "salam",
+                incomingPattern = "salam, assalam, salamualaykum, আসসালামু আলাইকুম",
                 matchType = MatchType.CONTAINS,
                 replyText = "Wa Alaikum Assalam! Thanks for texting. I will get back to you shortly.",
                 isEnabled = true,
                 isGroupAllowed = false,
-                cooldownSeconds = 180,
+                cooldownSeconds = 30,
                 priority = 9
             ),
             ReplyRule(
                 name = "Price / Inquiries",
-                incomingPattern = "price",
+                incomingPattern = "price, cost, rate, কত, দাম",
                 matchType = MatchType.CONTAINS,
-                replyText = "Hello! Thanks for asking about our pricing. Please let us know the exact product or service name, and we will send you the price list.",
+                replyText = "Hello! Thanks for asking about our pricing. Please let us know the exact product or service name, and we will send you the price details.",
                 isEnabled = true,
                 isGroupAllowed = true,
-                cooldownSeconds = 120,
+                cooldownSeconds = 30,
                 priority = 8
             ),
             ReplyRule(
                 name = "Emergency / Urgent",
-                incomingPattern = "urgent",
+                incomingPattern = "urgent, emergency, জরুরি",
                 matchType = MatchType.CONTAINS,
-                replyText = "Noted your message as urgent! I am currently in a meeting, but I will check this within 15 minutes.",
+                replyText = "Noted your message as urgent! I am currently away, but I will check this within 15 minutes.",
                 isEnabled = true,
                 isGroupAllowed = false,
-                cooldownSeconds = 60,
+                cooldownSeconds = 30,
                 priority = 15
             ),
             ReplyRule(
                 name = "Default Away Fallback",
                 incomingPattern = "*",
                 matchType = MatchType.FALLBACK_DEFAULT,
-                replyText = "Hello {sender}! I'm currently away and cannot view messages right now. This is an automated response.",
+                replyText = "Hello {sender}! I'm currently away from my phone and cannot read messages right now. This is an automated response.",
                 isEnabled = true,
                 isGroupAllowed = false,
-                cooldownSeconds = 300,
+                cooldownSeconds = 30,
                 priority = 0
             )
         )

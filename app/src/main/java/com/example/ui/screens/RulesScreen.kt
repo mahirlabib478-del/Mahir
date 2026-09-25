@@ -108,7 +108,7 @@ fun RulesScreen(
                             .background(MaterialTheme.colorScheme.primaryContainer, CircleShape)
                     ) {
                         Icon(
-                            imageVector = Icons.Default.Rule,
+                            imageVector = Icons.Filled.Rule,
                             contentDescription = null,
                             tint = PrimaryGreen,
                             modifier = Modifier.size(36.dp)

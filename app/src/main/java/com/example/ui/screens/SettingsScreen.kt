@@ -111,7 +111,7 @@ fun SettingsScreen(
                     SettingToggleRow(
                         title = "WhatsApp Messenger",
                         description = "Enable auto-replies for standard WhatsApp (com.whatsapp)",
-                        icon = Icons.Default.Chat,
+                        icon = Icons.Filled.Chat,
                         checked = true, // Always active for regular WhatsApp
                         onCheckedChange = {}
                     )
@@ -141,7 +141,7 @@ fun SettingsScreen(
                     SettingToggleRow(
                         title = "Prefix \"[Auto-Reply]\" Tag",
                         description = "Adds [Auto-Reply] to messages so the recipient knows it is automated",
-                        icon = Icons.Default.Label,
+                        icon = Icons.Filled.Label,
                         checked = prependTag,
                         onCheckedChange = { preferenceManager.setPrependTag(it) }
                     )
@@ -263,7 +263,7 @@ fun SettingsScreen(
                     ) {
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Icon(
-                                imageVector = Icons.Default.Help,
+                                imageVector = Icons.Filled.Help,
                                 contentDescription = null,
                                 tint = PrimaryGreen,
                                 modifier = Modifier.size(20.dp)

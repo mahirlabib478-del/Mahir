@@ -128,7 +128,8 @@ fun MainAppScreen(viewModel: MainViewModel = viewModel()) {
                     onToggleMaster = { viewModel.toggleMasterSwitch() },
                     onNavigateTab = { viewModel.setTab(it) },
                     onResetPresets = { viewModel.resetToStarterPresets() },
-                    onCheckPermission = { viewModel.checkPermission() }
+                    onCheckPermission = { viewModel.checkPermission() },
+                    onReconnectService = { viewModel.reconnectService() }
                 )
                 ScreenTab.RULES -> RulesScreen(
                     rules = allRules,

@@ -113,6 +113,12 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         _isPermissionGranted.value = WhatsAppNotificationListener.isPermissionGranted(getApplication())
     }
 
+    fun reconnectService() {
+        WhatsAppNotificationListener.reconnectService(getApplication())
+        _isPermissionGranted.value = WhatsAppNotificationListener.isPermissionGranted(getApplication())
+        _snackbarMessage.value = "Notification Service re-synced and refreshed"
+    }
+
     fun toggleMasterSwitch() {
         val newState = !isMasterEnabled.value
         preferenceManager.setMasterEnabled(newState)

@@ -75,6 +75,7 @@ fun HistoryScreen(
         val matchesFilter = when (selectedFilter) {
             "SENT" -> log.status == "SENT"
             "SIMULATED" -> log.status == "SIMULATED"
+            "NOT_SENT" -> log.status != "SENT" && log.status != "SIMULATED"
             else -> true
         }
 
@@ -139,7 +140,10 @@ fun HistoryScreen(
 
                 Spacer(modifier = Modifier.height(8.dp))
 
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
                     FilterChip(
                         selected = selectedFilter == "ALL",
                         onClick = { selectedFilter = "ALL" },
@@ -154,6 +158,11 @@ fun HistoryScreen(
                         selected = selectedFilter == "SIMULATED",
                         onClick = { selectedFilter = "SIMULATED" },
                         label = { Text("Simulated", fontSize = 11.sp) }
+                    )
+                    FilterChip(
+                        selected = selectedFilter == "NOT_SENT",
+                        onClick = { selectedFilter = "NOT_SENT" },
+                        label = { Text("Diagnostics", fontSize = 11.sp) }
                     )
                 }
             }
@@ -209,6 +218,11 @@ fun HistoryScreen(
                         "SENT" -> Triple(Color(0xFFDCFCE7), Color(0xFF15803D), "Live Sent")
                         "SIMULATED" -> Triple(Color(0xFFE0F2FE), Color(0xFF0369A1), "Simulated")
                         "SKIPPED_COOLDOWN" -> Triple(Color(0xFFFEF3C7), Color(0xFFB45309), "Cooldown")
+                        "NO_RULE_MATCH" -> Triple(Color(0xFFF3E8FF), Color(0xFF7E22CE), "No Rule Match")
+                        "NO_REPLY_ACTION" -> Triple(Color(0xFFFEE2E2), Color(0xFFB91C1C), "No Quick Reply")
+                        "GROUP_IGNORED" -> Triple(Color(0xFFFFEDD5), Color(0xFFC2410C), "Group Ignored")
+                        "BLACKLISTED" -> Triple(Color(0xFFF1F5F9), Color(0xFF475569), "Blacklisted")
+                        "SEND_FAILED" -> Triple(Color(0xFFFEE2E2), Color(0xFFB91C1C), "Send Failed")
                         else -> Triple(Color(0xFFF1F5F9), Color(0xFF475569), log.status)
                     }
 
