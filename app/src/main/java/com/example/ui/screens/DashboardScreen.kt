@@ -619,6 +619,9 @@ fun DashboardScreen(
                     "SKIPPED_COOLDOWN" -> Triple(Color(0xFFFEF3C7), Color(0xFFB45309), "Cooldown")
                     "NO_RULE_MATCH" -> Triple(Color(0xFFF3E8FF), Color(0xFF7E22CE), "No Match")
                     "NO_REPLY_ACTION" -> Triple(Color(0xFFFEE2E2), Color(0xFFB91C1C), "No Quick Reply")
+                    "GROUP_IGNORED" -> Triple(Color(0xFFFFEDD5), Color(0xFFC2410C), "Group Ignored")
+                    "BLACKLISTED" -> Triple(Color(0xFFF1F5F9), Color(0xFF475569), "Blacklisted")
+                    "SEND_FAILED" -> Triple(Color(0xFFFEE2E2), Color(0xFFB91C1C), "Send Failed")
                     else -> Triple(Color(0xFFF1F5F9), Color(0xFF475569), log.status)
                 }
 

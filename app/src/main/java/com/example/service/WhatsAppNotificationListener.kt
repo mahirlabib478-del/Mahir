@@ -92,38 +92,50 @@ class WhatsAppNotificationListener : NotificationListenerService() {
         val extras = notification.extras ?: return
 
         // 3. Extract Message Text and Sender reliably (handles modern MessagingStyle)
-        var sender: String? = null
-        var incomingMessage: String? = null
-        var isGroup = extras.getBoolean(Notification.EXTRA_IS_GROUP_CONVERSATION, false)
-
         val messagingStyle = NotificationCompat.MessagingStyle.extractMessagingStyleFromNotification(notification)
-        if (messagingStyle != null) {
-            val messages = messagingStyle.messages
-            if (messages.isNotEmpty()) {
-                val latestMessage = messages.last()
-                val textCandidate = latestMessage.text?.toString()?.trim()
+        val messages = messagingStyle?.messages ?: emptyList()
+        val latestMessage = messages.lastOrNull()
+        val textCandidate = latestMessage?.text?.toString()?.trim()
+        val person = latestMessage?.person
+        val personName = person?.name?.toString()?.trim()
+        val convTitle = messagingStyle?.conversationTitle?.toString()?.trim()
+        val isGroupStyle = messagingStyle?.isGroupConversation
 
-                // Check if message is from the user (self reply)
-                val person = latestMessage.person
-                val personName = person?.name?.toString()?.trim()
-                if (person == null && textCandidate?.startsWith("[Auto-Reply]", ignoreCase = true) == true) {
-                    Log.d(TAG, "Ignored self outgoing message in MessagingStyle")
-                    return
-                }
+        // Check if message is from the user (self reply)
+        if (latestMessage != null && person == null && textCandidate?.startsWith("[Auto-Reply]", ignoreCase = true) == true) {
+            Log.d(TAG, "Ignored self outgoing message in MessagingStyle")
+            return
+        }
 
-                incomingMessage = textCandidate
+        val isGroup = isGroupConversation(
+            sbnTag = sbn.tag,
+            sbnKey = sbn.key,
+            extras = extras,
+            isGroupStyle = isGroupStyle,
+            conversationTitle = convTitle,
+            personName = personName
+        )
 
-                val convTitle = messagingStyle.conversationTitle?.toString()?.trim()
-                if (!convTitle.isNullOrEmpty()) {
-                    isGroup = true
-                    sender = convTitle
-                } else if (!personName.isNullOrEmpty()) {
-                    sender = personName
-                }
+        var sender: String? = null
+        var incomingMessage: String? = textCandidate
+
+        if (isGroup) {
+            // For group conversations: conversationTitle is the group's name
+            sender = when {
+                !convTitle.isNullOrEmpty() -> convTitle
+                !personName.isNullOrEmpty() -> personName
+                else -> null
+            }
+        } else {
+            // For 1-on-1 private individual chat: personName is the sender/contact name
+            sender = when {
+                !personName.isNullOrEmpty() -> personName
+                !convTitle.isNullOrEmpty() -> convTitle
+                else -> null
             }
         }
 
-        // Fallback sender extraction
+        // Fallback sender extraction if MessagingStyle didn't provide one
         if (sender.isNullOrEmpty()) {
             sender = extras.getCharSequence(Notification.EXTRA_CONVERSATION_TITLE)?.toString()?.trim()
                 ?: extras.getCharSequence(Notification.EXTRA_TITLE)?.toString()?.trim()
@@ -141,6 +153,11 @@ class WhatsAppNotificationListener : NotificationListenerService() {
             return
         }
 
+        // If legacy fallback group message was formatted as "Sender: Message", strip prefix
+        if (isGroup && messagingStyle == null && incomingMessage.contains(": ")) {
+            incomingMessage = incomingMessage.substringAfter(": ").trim()
+        }
+
         // 4. Filter WhatsApp system notifications
         if (sender.equals("WhatsApp", ignoreCase = true) || sender.equals("WhatsApp Business", ignoreCase = true)) {
             if (incomingMessage.contains("Checking for new messages", ignoreCase = true) ||
@@ -156,10 +173,6 @@ class WhatsAppNotificationListener : NotificationListenerService() {
             incomingMessage.startsWith("You: ", ignoreCase = true)) {
             Log.d(TAG, "Ignored self/outgoing message")
             return
-        }
-
-        if (!isGroup) {
-            isGroup = extras.containsKey(Notification.EXTRA_SUB_TEXT) || sender.contains(":")
         }
 
         // 6. De-duplicate rapid duplicate notifications for the exact same message
@@ -412,6 +425,54 @@ class WhatsAppNotificationListener : NotificationListenerService() {
         @Volatile
         var isServiceConnected: Boolean = false
             private set
+
+        /**
+         * Accurately determines if a WhatsApp notification is from a group conversation or
+         * an individual 1-on-1 private chat.
+         */
+        fun isGroupConversation(
+            sbnTag: String?,
+            sbnKey: String?,
+            extras: Bundle?,
+            isGroupStyle: Boolean?,
+            conversationTitle: String?,
+            personName: String?
+        ): Boolean {
+            // 1. WhatsApp JID format check in tag or key
+            // WhatsApp group chat JIDs end with "@g.us" (e.g. 120363024829384920@g.us)
+            // Individual user JIDs end with "@s.whatsapp.net" or contact phone numbers
+            if (sbnTag?.contains("@g.us", ignoreCase = true) == true ||
+                sbnKey?.contains("@g.us", ignoreCase = true) == true
+            ) {
+                return true
+            }
+            if (sbnTag?.contains("@s.whatsapp.net", ignoreCase = true) == true ||
+                sbnKey?.contains("@s.whatsapp.net", ignoreCase = true) == true
+            ) {
+                return false
+            }
+
+            // 2. Android official group conversation flag (API 28+ / NotificationCompat)
+            if (extras != null && extras.containsKey(Notification.EXTRA_IS_GROUP_CONVERSATION)) {
+                return extras.getBoolean(Notification.EXTRA_IS_GROUP_CONVERSATION, false)
+            }
+
+            // 3. NotificationCompat.MessagingStyle group flag
+            if (isGroupStyle == true) {
+                return true
+            }
+
+            // 4. In MessagingStyle: For group chats, conversationTitle represents the group name,
+            // while personName represents the individual participant who sent the message.
+            // In 1-on-1 private chats, conversationTitle is either null, empty, or equal to personName.
+            if (!conversationTitle.isNullOrEmpty() && !personName.isNullOrEmpty() &&
+                !conversationTitle.equals(personName, ignoreCase = true)
+            ) {
+                return true
+            }
+
+            return false
+        }
 
         fun isPermissionGranted(context: Context): Boolean {
             val enabledListeners = NotificationManagerCompat.getEnabledListenerPackages(context)
