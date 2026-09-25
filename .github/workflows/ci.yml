@@ -30,14 +30,13 @@ jobs:
           distribution: temurin
           java-version: '17'
 
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: '9.3.1'
-
-      - name: Accept Android SDK licenses
-        run: |
-          yes | sdkmanager --licenses || true
 
       - name: Restore debug keystore
         run: |
@@ -47,12 +46,8 @@ jobs:
 
       - name: Set up environment
         run: |
-          if [ ! -f ".env.example" ]; then
-            echo "GEMINI_API_KEY=" > .env.example
-          fi
-          if [ ! -f ".env" ]; then
-            cp .env.example .env
-          fi
+          touch .env.example
+          touch .env
 
       - name: Unit tests
         run: gradle :app:testDebugUnitTest --stacktrace
