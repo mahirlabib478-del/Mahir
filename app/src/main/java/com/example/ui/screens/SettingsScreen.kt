@@ -231,12 +231,16 @@ fun SettingsScreen(
 
                         Button(
                             onClick = {
-                                WhatsAppNotificationListener.openPermissionSettings(context)
+                                if (isPermissionGranted) {
+                                    WhatsAppNotificationListener.openPermissionSettings(context)
+                                } else {
+                                    WhatsAppNotificationListener.openAppDetailsSettings(context)
+                                }
                             },
                             colors = ButtonDefaults.buttonColors(containerColor = PrimaryGreen),
                             modifier = Modifier.testTag("open_system_settings_btn")
                         ) {
-                            Text("Settings", fontSize = 12.sp)
+                            Text(if (isPermissionGranted) "Settings" else "Fix Access", fontSize = 12.sp)
                         }
                     }
                 }
@@ -291,7 +295,7 @@ fun SettingsScreen(
                             GuideStep(
                                 stepNumber = "১",
                                 title = "নোটিফিকেশন পারমিশন দিন (Notification Access)",
-                                description = "অ্যান্ড্রয়েডের সিকিউরিটি সিস্টেম অনুযায়ী অ্যাপটি নোটিফিকেশন শুনে কাজ করে। সেটিংস থেকে 'WA AutoReply' কে নোটিফিকেশন অ্যাক্সেস চালু করে দিন।"
+                                description = "অ্যাপটি যদি APK দিয়ে ইনস্টল করা হয়ে থাকে, আগে App Info থেকে ⋮ -> Allow restricted settings চালু করুন। তারপর Notification Access-এ গিয়ে 'WA AutoReply' অন করুন।"
                             )
                             Spacer(modifier = Modifier.height(8.dp))
                             GuideStep(
