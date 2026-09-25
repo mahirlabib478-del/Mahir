@@ -1,0 +1,6 @@
+{
+  "name": "WA AutoReply",
+  "description": "WhatsApp auto reply system with customizable triggers, quick replies, cooldown controls, and notification simulator.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

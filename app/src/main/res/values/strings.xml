@@ -1,0 +1,5 @@
+<resources>
+    <string name="app_name">WA AutoReply</string>
+    <string name="notification_listener_service_name">WA Auto Reply Service</string>
+    <string name="notification_listener_service_desc">Enables automatic replies to incoming WhatsApp messages based on your custom rules.</string>
+</resources>
