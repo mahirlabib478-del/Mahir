@@ -63,6 +63,7 @@ import androidx.compose.ui.unit.sp
 import com.example.data.preferences.PreferenceManager
 import com.example.service.AutoReplyForegroundService
 import com.example.service.WhatsAppNotificationListener
+import com.example.ui.components.AutostartGuideDialog
 import com.example.ui.theme.AccentGreen
 import com.example.ui.theme.PrimaryGreen
 import com.example.util.BatteryOptimizationHelper
@@ -75,6 +76,16 @@ fun SettingsScreen(
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
+    var showAutostartGuide by remember { mutableStateOf(false) }
+
+    if (showAutostartGuide) {
+        AutostartGuideDialog(
+            onDismiss = { showAutostartGuide = false },
+            onOpenSettings = {
+                BatteryOptimizationHelper.openOemBackgroundSettings(context)
+            }
+        )
+    }
 
     val isMasterEnabled by preferenceManager.isMasterEnabled.collectAsState()
     val replyToGroups by preferenceManager.replyToGroups.collectAsState()
@@ -300,7 +311,7 @@ fun SettingsScreen(
                         }
                         OutlinedButton(
                             onClick = {
-                                BatteryOptimizationHelper.openOemBackgroundSettings(context)
+                                showAutostartGuide = true
                             },
                             contentPadding = PaddingValues(horizontal = 8.dp, vertical = 4.dp),
                             modifier = Modifier.height(32.dp)

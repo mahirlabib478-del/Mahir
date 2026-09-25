@@ -65,6 +65,7 @@ import androidx.compose.ui.unit.sp
 import com.example.data.model.ReplyLog
 import com.example.service.WhatsAppNotificationListener
 import com.example.ui.ScreenTab
+import com.example.ui.components.AutostartGuideDialog
 import com.example.ui.components.PlatformBadge
 import com.example.ui.components.SenderAvatar
 import com.example.ui.components.StatusBadge
@@ -91,6 +92,16 @@ fun DashboardScreen(
 ) {
     val context = LocalContext.current
     var isTroubleshootingExpanded by remember { mutableStateOf(false) }
+    var showAutostartGuide by remember { mutableStateOf(false) }
+
+    if (showAutostartGuide) {
+        AutostartGuideDialog(
+            onDismiss = { showAutostartGuide = false },
+            onOpenSettings = {
+                BatteryOptimizationHelper.openOemBackgroundSettings(context)
+            }
+        )
+    }
 
     LazyColumn(
         modifier = modifier
@@ -354,7 +365,7 @@ fun DashboardScreen(
                             }
                             OutlinedButton(
                                 onClick = {
-                                    BatteryOptimizationHelper.openOemBackgroundSettings(context)
+                                    showAutostartGuide = true
                                 },
                                 modifier = Modifier.weight(1f)
                             ) {

@@ -9,6 +9,8 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -125,4 +127,154 @@ fun PlatformBadge(platform: String, modifier: Modifier = Modifier) {
             modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
         )
     }
+}
+
+@Composable
+fun AutostartGuideDialog(
+    onDismiss: () -> Unit,
+    onOpenSettings: () -> Unit
+) {
+    androidx.compose.material3.AlertDialog(
+        onDismissRequest = onDismiss,
+        title = {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                androidx.compose.material3.Icon(
+                    imageVector = androidx.compose.material.icons.Icons.Default.Settings,
+                    contentDescription = null,
+                    tint = Color(0xFF2563EB),
+                    modifier = Modifier.size(22.dp)
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(
+                    text = "App Info-তে যা যা করবেন",
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 17.sp
+                )
+            }
+        },
+        text = {
+            androidx.compose.foundation.lazy.LazyColumn(
+                verticalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(10.dp)
+            ) {
+                item {
+                    Text(
+                        text = "ফোন স্লিপ থাকলে বা অ্যাপ বন্ধ থাকলেও ২৪/৭ কাজ করার জন্য App Info পেজে নিচের সেটিংসগুলো করুন:",
+                        fontSize = 13.sp,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+
+                item {
+                    androidx.compose.material3.Surface(
+                        color = Color(0xFFF1F5F9),
+                        shape = RoundedCornerShape(10.dp),
+                        modifier = Modifier.padding(vertical = 2.dp)
+                    ) {
+                        androidx.compose.foundation.layout.Column(modifier = Modifier.padding(10.dp)) {
+                            Text(
+                                text = "১. Battery (ব্যাটারি অপটিমাইজেশন):",
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 13.sp,
+                                color = Color(0xFF1E293B)
+                            )
+                            Spacer(modifier = Modifier.size(2.dp))
+                            Text(
+                                text = "• 'Battery' বা 'App battery usage'-এ চাপুন।\n• 'Optimized'-এর পরিবর্তে 'Unrestricted' বা 'No restrictions' (কোনো নিষেধাজ্ঞা নেই) সিলেক্ট করুন।",
+                                fontSize = 12.sp,
+                                color = Color(0xFF475569)
+                            )
+                        }
+                    }
+                }
+
+                item {
+                    androidx.compose.material3.Surface(
+                        color = Color(0xFFF1F5F9),
+                        shape = RoundedCornerShape(10.dp),
+                        modifier = Modifier.padding(vertical = 2.dp)
+                    ) {
+                        androidx.compose.foundation.layout.Column(modifier = Modifier.padding(10.dp)) {
+                            Text(
+                                text = "২. Autostart / Auto-launch (অটো-স্টার্ট):",
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 13.sp,
+                                color = Color(0xFF1E293B)
+                            )
+                            Spacer(modifier = Modifier.size(2.dp))
+                            Text(
+                                text = "• Xiaomi / Redmi / POCO বা Realme হলে পেজের মাঝে 'Autostart' বা 'Auto-launch' টগলটি ON (চালু) করুন।",
+                                fontSize = 12.sp,
+                                color = Color(0xFF475569)
+                            )
+                        }
+                    }
+                }
+
+                item {
+                    androidx.compose.material3.Surface(
+                        color = Color(0xFFF1F5F9),
+                        shape = RoundedCornerShape(10.dp),
+                        modifier = Modifier.padding(vertical = 2.dp)
+                    ) {
+                        androidx.compose.foundation.layout.Column(modifier = Modifier.padding(10.dp)) {
+                            Text(
+                                text = "৩. Pause app activity if unused:",
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 13.sp,
+                                color = Color(0xFF1E293B)
+                            )
+                            Spacer(modifier = Modifier.size(2.dp))
+                            Text(
+                                text = "• একদম নিচের দিকে এই অপশনটি দেখতে পাবেন, এটি OFF (বন্ধ) রাখুন যাতে অ্যান্ড্রয়েড নিজে থেকে পারমিশন বাতিল না করে।",
+                                fontSize = 12.sp,
+                                color = Color(0xFF475569)
+                            )
+                        }
+                    }
+                }
+
+                item {
+                    androidx.compose.material3.Surface(
+                        color = Color(0xFFF1F5F9),
+                        shape = RoundedCornerShape(10.dp),
+                        modifier = Modifier.padding(vertical = 2.dp)
+                    ) {
+                        androidx.compose.foundation.layout.Column(modifier = Modifier.padding(10.dp)) {
+                            Text(
+                                text = "৪. Other Permissions (Xiaomi / MIUI):",
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 13.sp,
+                                color = Color(0xFF1E293B)
+                            )
+                            Spacer(modifier = Modifier.size(2.dp))
+                            Text(
+                                text = "• 'Other permissions'-এ গিয়ে 'Show on Lock screen' এবং 'Display pop-up windows' অন করে দিন।",
+                                fontSize = 12.sp,
+                                color = Color(0xFF475569)
+                            )
+                        }
+                    }
+                }
+            }
+        },
+        confirmButton = {
+            androidx.compose.material3.Button(
+                onClick = {
+                    onOpenSettings()
+                    onDismiss()
+                },
+                colors = androidx.compose.material3.ButtonDefaults.buttonColors(
+                    containerColor = Color(0xFF2563EB),
+                    contentColor = Color.White
+                )
+            ) {
+                Text("App Info ওপেন করুন", fontWeight = FontWeight.Bold)
+            }
+        },
+        dismissButton = {
+            androidx.compose.material3.TextButton(onClick = onDismiss) {
+                Text("বুঝেছি")
+            }
+        }
+    )
 }
