@@ -291,6 +291,38 @@ fun SettingsScreen(
 
                     HorizontalDivider(modifier = Modifier.padding(vertical = 12.dp))
 
+                    // Lock Screen Sensitive Content Fix
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                text = "লক স্ক্রিন নোটিফিকেশন ফিক্স (Lock Screen Fix)",
+                                fontWeight = FontWeight.SemiBold,
+                                fontSize = 13.sp,
+                                color = Color(0xFF1E293B)
+                            )
+                            Text(
+                                text = "ফোন লক থাকলে নোটিফিকেশনের টেক্সট হাইড থাকলে অটো-রিপ্লাই কাজ করবে না। 'Show all content' অন রাখুন।",
+                                fontSize = 11.sp,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                        OutlinedButton(
+                            onClick = {
+                                com.example.util.WakeLockHelper.openLockScreenNotificationSettings(context)
+                            },
+                            contentPadding = PaddingValues(horizontal = 8.dp, vertical = 4.dp),
+                            modifier = Modifier.height(32.dp)
+                        ) {
+                            Text("সেটিংস", fontSize = 11.sp)
+                        }
+                    }
+
+                    HorizontalDivider(modifier = Modifier.padding(vertical = 12.dp))
+
                     // OEM Autostart (Xiaomi / Samsung / Vivo / Oppo)
                     Row(
                         verticalAlignment = Alignment.CenterVertically,

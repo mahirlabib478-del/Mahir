@@ -219,12 +219,13 @@ class WhatsAppNotificationListener : NotificationListenerService() {
         val targetSender = sender
         val targetText = incomingMessage
 
-        val powerManager = getSystemService(Context.POWER_SERVICE) as? android.os.PowerManager
-        val wakeLock = powerManager?.newWakeLock(
-            android.os.PowerManager.PARTIAL_WAKE_LOCK,
-            "AutoReply::NotificationProcessingWakeLock"
-        )
-        wakeLock?.acquire(10_000L) // Keep CPU active for up to 10s while sending
+        // Acquire both CPU WakeLock and brief screen wakeup if device is locked
+        val wakeLock = com.example.util.WakeLockHelper.acquireCpuWakeLock(this, 12_000L)
+        var screenLock: android.os.PowerManager.WakeLock? = null
+        if (com.example.util.WakeLockHelper.isDeviceLocked(this)) {
+            Log.d(TAG, "Device is locked during incoming message from $targetSender, waking up temporarily")
+            screenLock = com.example.util.WakeLockHelper.wakeScreenBriefly(this, 3_000L)
+        }
 
         try {
             val db = app.database

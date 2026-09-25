@@ -248,7 +248,7 @@ fun AutostartGuideDialog(
                             )
                             Spacer(modifier = Modifier.size(2.dp))
                             Text(
-                                text = "• 'Other permissions'-এ গিয়ে 'Show on Lock screen' এবং 'Display pop-up windows' অন করে দিন।",
+                                text = "• 'Other permissions'-এ গিয়ে 'Show on Lock screen' এবং 'Display pop-up windows' অন করে দিন।\n• ফোনের Settings -> Notifications -> Lock Screen-এ 'Show all content' চালু রাখুন যাতে ফোন লক থাকলেও মেসেজটি পড়া যায়।",
                                 fontSize = 12.sp,
                                 color = Color(0xFF475569)
                             )

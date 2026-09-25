@@ -46,10 +46,7 @@ android {
       signingConfig = signingConfigs.getByName("release")
     }
     debug {
-      val customKeystore = file("${rootDir}/debug.keystore")
-      if (customKeystore.exists()) {
-        signingConfig = signingConfigs.getByName("debugConfig")
-      }
+      signingConfig = signingConfigs.getByName("debugConfig")
     }
   }
   compileOptions {
